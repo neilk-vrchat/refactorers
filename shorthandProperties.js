@@ -1,3 +1,18 @@
+/*
+ * a shell tool to transform JS
+
+  use it like so:
+  $ node ./shorthandProperties.js < source.js > target.js
+
+  Or, to do it en masse, with bash, leveraging `ag` to transform all the files under api's tools:
+
+   for f in `ag -l '{' ../web-api/api/api_v1/tools/`; do
+     node ./shorthandProperties.js < $f > /tmp/foo;
+     mv /tmp/foo $f;
+   done;
+
+*/
+
 const esprima = require('esprima');
 const getStdin = require('get-stdin');
 
