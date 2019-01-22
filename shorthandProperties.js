@@ -45,7 +45,7 @@ const main = async () => {
     const source = await getStdin();
 
     const modified = transformSource(source, isShorthandableProperty, getShorthandProperty);
-    console.log(modified);
+    process.stdout.write(modified);
 };
 
 main();
