@@ -4,57 +4,52 @@
   use it like so:
   $ node ./shorthandProperties.js < source.js > target.js
 
-  Or, to do it en masse, with bash, leveraging `ag` to transform all the files under api's tools:
-
-   for f in `ag -l '{' ../web-api/api/api_v1/tools/`; do
-     node ./shorthandProperties.js < $f > /tmp/foo;
-     mv /tmp/foo $f;
-   done;
-
+  Or, to do it en masse, with bash, see transform.sh
 */
 
 const esprima = require('esprima');
 const getStdin = require('get-stdin');
 
 
-// looks for console.log(x) or console['error'](y)
-const isConsoleCall = (node) => {
-    return (node.type === 'CallExpression') &&
-        (node.callee.type === 'MemberExpression') &&
-        (node.callee.object.type === 'Identifier') &&
-        (node.callee.object.name === 'console');
-};
-
 // looks for redundant declarations inside objects, like { <foo: foo> }
 const isShorthandableProperty = (node) => {
-  return (node.type === 'Property') &&
-      (node.shorthand === false) &&
-      (node.key.type === 'Identifier') &&
-      (node.value.type === 'Identifier') &&
-      (node.key.name === node.value.name)
+  return node.type === 'Property' &&
+      node.shorthand === false &&
+      node.key.type === 'Identifier' &&
+      node.value.type === 'Identifier' &&
+      node.key.name === node.value.name
 };
 
-// the replacement for { <foo: foo> } is just { <foo> }
+// the content for { <foo: foo> } is just { <foo> }
 const getShorthandProperty = (node) => node.value.name;
 
 
-// given Javascript source as a string, an estree node-matcher, and an estree node-transformer,
-// transform the source
+/*
+ * Given Javascript source as a string, an estree node-matcher, and an estree node-transformer,
+ * return transformed source as string
+ */
 const transformSource = (source, isMatched, getTransformed) => {
-    const entries = [];
+    const edits = [];
     esprima.parseScript(source, {}, (node, meta) => {
         if (isMatched(node)) {
-            entries.push({
+            edits.push({
                 start: meta.start.offset,
                 end: meta.end.offset,
                 content: getTransformed(node),
             });
         }
     });
-    entries
-        .sort((a, b) => b.end - a.end )
-        .forEach(n => {
-            source = source.slice(0, n.start) + n.content + source.slice(n.end);
+
+    /*
+     * Perform all the edits.
+     * Note we perform the edits from bottom to top, so the start and end offsets don't need to be
+     * reshuffled with each edit. We recreate the string over and over, so it's not efficient,
+     * but this is good enough for now.
+     */
+    edits
+        .sort((a, b) => b.end - a.end)
+        .forEach(edit => {
+            source = source.slice(0, edit.start) + edit.content + source.slice(edit.end);
         });
     return source;
 };
@@ -62,7 +57,6 @@ const transformSource = (source, isMatched, getTransformed) => {
 
 const main = async () => {
     const source = await getStdin();
-
     const modified = transformSource(source, isShorthandableProperty, getShorthandProperty);
     process.stdout.write(modified);
 };
