@@ -9,7 +9,12 @@ sourcePath=$2
 
 tempFile="$(mktemp)";
 
-find "$sourcePath" -name '*.js' -print | while read filePath; do
-    node "$transformerScript" < "$filePath" > "$tempFile";
-    mv "$tempFile" "$filePath";
+warn() { echo "$@" 1>&2; }
+
+ag -l --js '{' "$sourcePath" | while read filePath; do
+    if node "$transformerScript" < "$filePath" > "$tempFile"; then
+        mv "$tempFile" "$filePath";
+    else
+        warn "Error: $? whilst transforming $filePath";
+    fi
 done

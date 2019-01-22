@@ -30,7 +30,7 @@ const getShorthandProperty = (node) => node.value.name;
  */
 const transformSource = (source, isMatched, getTransformed) => {
     const edits = [];
-    esprima.parseScript(source, {}, (node, meta) => {
+    esprima.parseScript(source, {jsx: true}, (node, meta) => {
         if (isMatched(node)) {
             edits.push({
                 start: meta.start.offset,
@@ -61,4 +61,7 @@ const main = async () => {
     process.stdout.write(modified);
 };
 
-main().catch(console.error);
+main().catch((e) => {
+    console.error(e);
+    process.exit(1);
+});
