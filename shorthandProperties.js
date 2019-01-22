@@ -13,6 +13,8 @@ const isConsoleCall = (node) => {
 const isShorthandableProperty = (node) => {
   return (node.type === 'Property') &&
       (node.shorthand === false) &&
+      (node.key.type === 'Identifier') &&
+      (node.value.type === 'Identifier') &&
       (node.key.name === node.value.name)
 };
 
