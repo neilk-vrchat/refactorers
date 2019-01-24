@@ -11,7 +11,13 @@ tempFile="$(mktemp)";
 
 warn() { echo "$@" 1>&2; }
 
-ag -l --js '{' "$sourcePath" | while read filePath; do
+fileList="$sourcePath";
+if [[ -d $sourcePath ]]; then
+  fileList=$(ag -l --js '{' "$sourcePath");
+fi
+
+echo "$fileList" | while read filePath; do
+    echo "doing $filePath...";
     if node "$transformerScript" < "$filePath" > "$tempFile"; then
         mv "$tempFile" "$filePath";
     else
